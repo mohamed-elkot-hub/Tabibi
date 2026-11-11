@@ -6,6 +6,7 @@ import { UserRole } from '../../enums';
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
+  discriminatorKey: 'role',
 })
 export class User implements IUser {
   @Prop({
