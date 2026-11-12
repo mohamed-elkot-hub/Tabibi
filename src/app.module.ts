@@ -11,7 +11,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   imports: [
     { module: MongoDBModule, global: true },
     ConfigModule.forRoot({
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env'],
       isGlobal: true,
     }),
     UserModule,

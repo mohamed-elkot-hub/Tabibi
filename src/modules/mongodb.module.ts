@@ -4,13 +4,16 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { userModel, UserRepository } from '../common/models/user';
 import { Connection } from 'mongoose';
 import { UserModule } from './user/user.module';
+import configurtion from '../config/configurtion';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true, load: [configurtion] }),
     MongooseModule.forRootAsync({
-      inject: [ConfigService],
+      inject: [ConfigService], //  ConfigService
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
+        uri: configService.get<string>('database.uri'),
+
         onConnectionCreate: (connection: Connection) => {
           connection.on('connected', () => console.log('connected'));
           connection.on('open', () => console.log('open'));
