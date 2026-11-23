@@ -20,7 +20,7 @@ describe('MongooseAuthenticationStore', () => {
       deleteMany: vi.fn(() => query({ deletedCount: 0 })),
       updateOne: vi.fn(() => query({ modifiedCount: 1 })),
       deleteOne: vi.fn(() => query({ deletedCount: 1 })),
-      find: vi.fn(() => ({ lean: () => ({ exec: async () => [{ ...record, _id: 'mongo-id', __v: 0 }] }) })),
+      find: vi.fn(() => ({ exec: async () => [{ ...record, _id: 'mongo-id', __v: 0 }] })),
     };
     const store = new MongooseAuthenticationStore(sessions as never, {} as never, {} as never, { registerSource: vi.fn() } as never);
 
@@ -29,7 +29,7 @@ describe('MongooseAuthenticationStore', () => {
     expect(sessions.create).toHaveBeenCalledWith(record);
     expect(sessions.deleteMany).toHaveBeenCalledWith({ expiresAt: { $lte: record.createdAt } });
     await store.touchSession(record.id, new Date());
-    expect(sessions.updateOne).toHaveBeenCalledWith({ id: record.id, lastActiveAt: { $lt: expect.any(Date) } }, { $set: { lastActiveAt: expect.any(Date) } });
+    expect(sessions.updateOne).toHaveBeenCalledWith({ id: record.id, lastActiveAt: { $lt: expect.any(Date) } }, { $set: { lastActiveAt: expect.any(Date) } }, undefined);
     await expect(store.deleteSession(record.id)).resolves.toBe(true);
     await expect(store.listUserSessions(record.userId)).resolves.toEqual([record]);
   });
@@ -40,8 +40,8 @@ describe('MongooseAuthenticationStore', () => {
     const store = new MongooseAuthenticationStore({} as never, magicLinks as never, emailTokens as never, { registerSource: vi.fn() } as never);
 
     await expect(store.consumeMagicLink('link-1')).resolves.toEqual({ id: 'link-1' });
-    expect(magicLinks.findOneAndDelete).toHaveBeenCalledWith({ id: 'link-1' });
+    expect(magicLinks.findOneAndDelete).toHaveBeenCalledWith({ id: 'link-1' }, { projection: undefined });
     await expect(store.consumeEmailToken('token-1', 'email-verification')).resolves.toEqual({ id: 'token-1', purpose: 'email-verification' });
-    expect(emailTokens.findOneAndDelete).toHaveBeenCalledWith({ id: 'token-1', purpose: 'email-verification' });
+    expect(emailTokens.findOneAndDelete).toHaveBeenCalledWith({ id: 'token-1', purpose: 'email-verification' }, { projection: undefined });
   });
 });

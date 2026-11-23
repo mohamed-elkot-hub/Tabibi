@@ -33,7 +33,7 @@ When the doctor opens a valid, unused, unexpired verification link, the system p
 
 Account verification and professional verification are separate gates. Email verification confirms control of the account; admin approval of the submitted professional profile is described in [doctor.md](./doctor.md). A doctor whose account is verified but whose profile is awaiting admin review must not appear as bookable.
 
-Implementation status: doctor account registration accepts a name, email, and password at `POST /auth/doctor/register`; email verification is completed at `POST /auth/doctor/verify-email`. Unverified doctor account data is held in Redis for three days and persisted as a verified doctor only after a valid single-use email verification token. The configured `DOCTOR_EMAIL_VERIFICATION_URL` must point to the client page that reads the token query parameter and posts it to the verification endpoint. Doctor professional application fields and credential uploads are not part of this registration endpoint yet. Doctor password sign-in is available at `POST /auth/doctor/password-login`; doctor magic-link request and consume endpoints are `POST /auth/doctor/magic-link/request` and `POST /auth/doctor/magic-link/consume`. Super-admin password sign-in is available at `POST /auth/super-admin/password-login`. Password hashes use `@nestjs/authentication`'s scrypt `PasswordHasher`. Mongo session records live in the `sessions` collection and have a seven-day absolute lifetime and one-day idle timeout. Magic links are single-use and email enumeration-safe.
+Implementation status: doctor account registration accepts a name, email, and password at `POST /auth/doctor/register`; email verification is completed at `POST /auth/doctor/verify-email`. Unverified doctor account data is held in Redis for three days and persisted as a verified doctor only after a valid single-use email verification token. The configured `DOCTOR_EMAIL_VERIFICATION_URL` must point to the client page that reads the token query parameter and posts it to the verification endpoint. Doctor professional application fields and credential uploads are not part of this registration endpoint yet. Shared password sign-in for eligible roles is `POST /auth/login`; verified super-admins and verified, approved doctors use the same DTO and response shape. Doctor magic-link request and consume endpoints remain `POST /auth/doctor/magic-link/request` and `POST /auth/doctor/magic-link/consume`. Authenticated users can read and update their own basic profile with `GET /auth/me` and `PATCH /auth/me`; they can change their password with `PATCH /auth/me/password` after providing the current password. Password changes revoke all sessions. Password hashes use `@nestjs/authentication`'s scrypt `PasswordHasher`. Mongo session records live in the `sessions` collection and have a seven-day absolute lifetime and one-day idle timeout. Magic links are single-use and email enumeration-safe.
 
 Doctor registration stores the password hash and account details in Redis under a generated account identifier with a three-day TTL. The Nest authentication package stores email verification tokens hashed in MongoDB and atomically consumes them. Successful verification loads the pending Redis record, creates a verified doctor in MongoDB with `pending_admin_review` status, and deletes the Redis record. Registration responses do not reveal whether an email already has an account. Do not replace the Redis pending-account storage with MongoDB or another store.
 
@@ -52,6 +52,9 @@ The package is `@nestjs/mail` (NestJS documentation section: Application / Mail)
 - Do not expose whether an email is registered in public responses.
 - Apply request limits to link requests and verification attempts.
 - Do not put patient information in the link itself.
+- The `super_admin` role is unique in MongoDB. Do not add a path that deletes the super-admin account or changes its role.
+- Self-service profile updates only accept a name. Password changes require the current password and revoke all user sessions.
+- Services express persistence queries with the shared `AbstractRepository` API; concrete repositories do not define model-specific query methods.
 - Doctor passwords must be stored using a secure one-way password hashing method; never store plaintext passwords.
 - Doctor sign-in links must be single-use and expire after a limited period.
 - DTOs are transformed and validated globally with `class-transformer`, `class-validator`, and Nest's `ValidationPipe` (`whitelist` and `forbidNonWhitelisted`).
@@ -81,7 +84,7 @@ Sources:
 - Confirm link lifetime, resend limits, and session lifetime.
 - Define account recovery if a patient loses access to their email.
 - Confirm whether a doctor can change their verified email and whether that requires re-verification.
-- Confirm password policy and reset flow for doctors.
+- Password reset/forgot-password routes are not implemented yet; when added, they are shared auth capabilities rather than role-specific endpoints.
 - Confirm the doctor experience and allowed actions while admin review is pending.
 
 ## Learned Rules
@@ -93,7 +96,7 @@ Sources:
 - Send verification and magic-link email through `@nestjs/mail` using Google's SMTP service; SMTP secrets are environment/secret-manager configuration, never committed.
 - Sessions, magic links, and email tokens are persisted in MongoDB through a Mongoose adapter and validated collection schemas; sessions are stored in the shared `sessions` collection.
 - Auth flows are organized in separate subfolders under `src/modules/auth`; shared auth configuration, session storage, and mail infrastructure belongs to the auth root/shared folders.
-- Super-admin seeding is explicit via `npm run seed:super-admin`; existing accounts are not overwritten or re-passworded.
+- Super-admin seeding is explicit via `npm run seed:super-admin`; MongoDB's partial unique index permits at most one account, and seeding never overwrites existing credentials.
 
 ## Out of Scope for This Flow
 

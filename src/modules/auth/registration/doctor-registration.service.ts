@@ -30,7 +30,7 @@ export class DoctorRegistrationService {
   ) {}
 
   async register(input: RegisterDoctorDto): Promise<{ message: string }> {
-    const existing = await this.users.findByEmail(input.email);
+    const existing = await this.users.findOne({ filter: { email: input.email } });
     if (existing) return this.registrationResponse();
 
     const id = new Types.ObjectId().toHexString();

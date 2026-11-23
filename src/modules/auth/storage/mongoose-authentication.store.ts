@@ -13,6 +13,7 @@ import type {
 import { Model, Schema } from 'mongoose';
 
 import { Session } from '../../../common/models/session/session.schema';
+import { AbstractRepository } from '../../../common/models/abstract.repository';
 
 class MagicLinkEntity implements MagicLinkRecord {
   id: string;
@@ -34,74 +35,81 @@ class EmailTokenEntity implements EmailTokenRecord {
 
 @Injectable()
 export class MongooseAuthenticationStore implements SessionStore, MagicLinkStore, EmailTokenStore {
+  private readonly sessionRecords: AbstractRepository<Session>;
+  private readonly magicLinkRecords: AbstractRepository<MagicLinkEntity>;
+  private readonly emailTokenRecords: AbstractRepository<EmailTokenEntity>;
+
   constructor(
-    @InjectModel(Session.name) private readonly sessions: Model<Session>,
-    @InjectModel('AuthenticationMagicLink') private readonly magicLinks: Model<MagicLinkEntity>,
-    @InjectModel('AuthenticationEmailToken') private readonly emailTokens: Model<EmailTokenEntity>,
+    @InjectModel(Session.name) sessions: Model<Session>,
+    @InjectModel('AuthenticationMagicLink') magicLinks: Model<MagicLinkEntity>,
+    @InjectModel('AuthenticationEmailToken') emailTokens: Model<EmailTokenEntity>,
     storage: AuthenticationStorage,
   ) {
+    this.sessionRecords = new AbstractRepository(sessions);
+    this.magicLinkRecords = new AbstractRepository(magicLinks);
+    this.emailTokenRecords = new AbstractRepository(emailTokens);
     storage.registerSource({ sessions: this, magicLinks: this, emailTokens: this });
   }
 
   async getSession(id: string): Promise<SessionRecord | undefined> {
-    const record = await this.sessions.findOne({ id }).lean().exec();
+    const record = await this.sessionRecords.findOne({ filter: { id } });
     return record ? this.clean(record) as SessionRecord : undefined;
   }
 
   async createSession(record: SessionRecord): Promise<void> {
-    await this.sessions.create(this.clean(record));
-    await this.sessions.deleteMany({ expiresAt: { $lte: record.createdAt } }).exec();
+    await this.sessionRecords.create(this.clean(record));
+    await this.sessionRecords.deleteMany({ expiresAt: { $lte: record.createdAt } });
   }
 
   async touchSession(id: string, lastActiveAt: Date): Promise<void> {
-    await this.sessions.updateOne({ id, lastActiveAt: { $lt: lastActiveAt } }, { $set: { lastActiveAt } }).exec();
+    await this.sessionRecords.updateOne({ id, lastActiveAt: { $lt: lastActiveAt } }, { $set: { lastActiveAt } });
   }
 
   async deleteSession(id: string): Promise<boolean> {
-    const result = await this.sessions.deleteOne({ id }).exec();
+    const result = await this.sessionRecords.deleteOne({ id });
     return result.deletedCount === 1;
   }
 
   async listUserSessions(userId: string): Promise<SessionRecord[]> {
-    const records = await this.sessions.find({ userId }).lean().exec();
+    const records = await this.sessionRecords.find({ filter: { userId } });
     return records.map((record) => this.clean(record) as SessionRecord);
   }
 
   async deleteUserSessions(userId: string): Promise<void> {
-    await this.sessions.deleteMany({ userId }).exec();
+    await this.sessionRecords.deleteMany({ userId });
   }
 
   async saveMagicLink(record: MagicLinkRecord): Promise<void> {
-    await this.magicLinks.create(this.clean(record));
-    await this.magicLinks.deleteMany({ expiresAt: { $lte: record.createdAt } }).exec();
-    await this.cap(this.magicLinks, 10_000);
+    await this.magicLinkRecords.create(this.clean(record));
+    await this.magicLinkRecords.deleteMany({ expiresAt: { $lte: record.createdAt } });
+    await this.cap(this.magicLinkRecords, 10_000);
   }
 
   async consumeMagicLink(id: string): Promise<MagicLinkRecord | undefined> {
-    const record = await this.magicLinks.findOneAndDelete({ id }).lean().exec();
+    const record = await this.magicLinkRecords.findOneAndDelete({ id });
     return record ? this.clean(record) as MagicLinkRecord : undefined;
   }
 
   async saveEmailToken(record: EmailTokenRecord): Promise<void> {
-    await this.emailTokens.create(this.clean(record));
-    await this.emailTokens.deleteMany({ expiresAt: { $lte: record.createdAt } }).exec();
-    await this.cap(this.emailTokens, 10_000);
+    await this.emailTokenRecords.create(this.clean(record));
+    await this.emailTokenRecords.deleteMany({ expiresAt: { $lte: record.createdAt } });
+    await this.cap(this.emailTokenRecords, 10_000);
   }
 
   async consumeEmailToken(id: string, purpose: EmailTokenPurpose): Promise<EmailTokenRecord | undefined> {
-    const record = await this.emailTokens.findOneAndDelete({ id, purpose }).lean().exec();
+    const record = await this.emailTokenRecords.findOneAndDelete({ id, purpose });
     return record ? this.clean(record) as EmailTokenRecord : undefined;
   }
 
   async deleteUserEmailTokens(userId: string, purpose: EmailTokenPurpose): Promise<void> {
-    await this.emailTokens.deleteMany({ userId, purpose }).exec();
+    await this.emailTokenRecords.deleteMany({ userId, purpose });
   }
 
-  private async cap<T>(model: Model<T>, limit: number): Promise<void> {
-    const count = await model.countDocuments().exec();
+  private async cap<T>(repository: AbstractRepository<T>, limit: number): Promise<void> {
+    const count = await repository.count();
     if (count <= limit) return;
-    const overflow = await model.find().sort({ expiresAt: 1 }).limit(count - limit).select({ _id: 1 }).lean().exec();
-    await model.deleteMany({ _id: { $in: overflow.map((record) => (record as { _id: unknown })._id) } }).exec();
+    const overflow = await repository.find({ sort: { expiresAt: 1 }, limit: count - limit, projection: { _id: 1 } });
+    await repository.deleteMany({ _id: { $in: overflow.map((record) => (record as { _id: unknown })._id) } } as never);
   }
 
   private clean<T extends object>(record: T): T {

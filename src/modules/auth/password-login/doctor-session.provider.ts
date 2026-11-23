@@ -15,7 +15,7 @@ export class DoctorSessionProvider extends SessionCookieProvider<AuthUser> {
   private readonly users: UserRepository;
 
   protected async validate(session: SessionRecord): Promise<AuthUser | null> {
-    const user = await this.users.findById(session.userId);
+    const user = await this.users.findOne({ filter: { _id: session.userId } });
     if (!user || !user.isVerified) return null;
     return user as AuthUser;
   }

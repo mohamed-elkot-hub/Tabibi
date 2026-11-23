@@ -7,10 +7,11 @@ import {
   MongooseAuthenticationStore,
 } from './storage/mongoose-authentication.store';
 import { MongooseModule } from '@nestjs/mongoose';
-import { DoctorPasswordLoginModule } from './password-login/password-login.module';
+import { PasswordLoginModule } from './password-login/password-login.module';
 import { MagicLinkModule } from './magic-link/magic-link.module';
 import { AuthMailModule } from './shared/auth-mail.module';
 import { RegistrationModule } from './registration/registration.module';
+import { SelfServiceModule } from './self-service/self-service.module';
 
 @Module({
   imports: [
@@ -55,8 +56,9 @@ import { RegistrationModule } from './registration/registration.module';
     AuthorizationModule.forRoot({ isGlobal: true, globalGuard: true }),
     AuthMailModule,
     RegistrationModule,
-    DoctorPasswordLoginModule,
+    PasswordLoginModule,
     MagicLinkModule,
+    SelfServiceModule,
   ],
   providers: [MongooseAuthenticationStore],
   exports: [AuthenticationModule],

@@ -6,7 +6,7 @@ import { DoctorRegistrationService, PENDING_DOCTOR_TTL_MS } from './doctor-regis
 describe('DoctorRegistrationService', () => {
   it('stores the pending doctor for three days and sends verification', async () => {
     const cache = { set: vi.fn(), del: vi.fn(), get: vi.fn() };
-    const users = { findByEmail: vi.fn().mockResolvedValue(null) };
+    const users = { findOne: vi.fn().mockResolvedValue(null) };
     const passwords = { hash: vi.fn().mockResolvedValue('hashed-password') };
     const emailVerification = { send: vi.fn().mockResolvedValue({ expiresAt: new Date() }) };
     const storage = { emailTokens: { deleteUserEmailTokens: vi.fn() } };
@@ -22,7 +22,7 @@ describe('DoctorRegistrationService', () => {
 
   it('returns the same response without sending mail for an existing email', async () => {
     const cache = { set: vi.fn(), del: vi.fn(), get: vi.fn() };
-    const users = { findByEmail: vi.fn().mockResolvedValue({ role: UserRole.DOCTOR }) };
+    const users = { findOne: vi.fn().mockResolvedValue({ role: UserRole.DOCTOR }) };
     const passwords = { hash: vi.fn() };
     const emailVerification = { send: vi.fn() };
     const storage = { emailTokens: { deleteUserEmailTokens: vi.fn() } };
@@ -36,7 +36,7 @@ describe('DoctorRegistrationService', () => {
 
   it('removes pending data and the token if delivery fails', async () => {
     const cache = { set: vi.fn(), del: vi.fn(), get: vi.fn() };
-    const users = { findByEmail: vi.fn().mockResolvedValue(null) };
+    const users = { findOne: vi.fn().mockResolvedValue(null) };
     const passwords = { hash: vi.fn().mockResolvedValue('hashed-password') };
     const emailVerification = { send: vi.fn().mockRejectedValue(new Error('mail unavailable')) };
     const storage = { emailTokens: { deleteUserEmailTokens: vi.fn().mockResolvedValue(undefined) } };
@@ -54,7 +54,7 @@ describe('DoctorEmailVerificationHandler', () => {
     const pending = { id: '65f000000000000000000001', email: 'ada@example.com', name: 'Dr Ada', passwordHash: 'hashed-password' };
     const cache = { get: vi.fn().mockResolvedValue(pending), del: vi.fn() };
     const doctors = { create: vi.fn().mockResolvedValue(undefined) };
-    const users = { findByEmail: vi.fn().mockResolvedValue(null) };
+    const users = { findOne: vi.fn().mockResolvedValue(null) };
     const mailer = { send: vi.fn() };
     const registry = { registerHandler: vi.fn() };
     const handler = new DoctorEmailVerificationHandler(cache as never, doctors as never, users as never, mailer as never, registry as never);

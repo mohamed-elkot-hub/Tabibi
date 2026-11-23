@@ -9,18 +9,19 @@
 5. If approved, the doctor becomes **Approved** and can complete their public profile and configure appointment availability.
 6. The doctor appears to patients and becomes bookable only when the account is email-verified, admin-approved, and active.
 
-Doctors can later sign in with either email/password or an email Magic Link. See [auth.md](./auth.md) for sign-in behavior.
+Doctors can later sign in with either email/password or an email Magic Link. Password sign-in uses the shared `POST /auth/login` route; see [auth.md](./auth.md) for sign-in behavior.
 
 ## Implemented Backend Slice
 
 - Doctor registration is available through `POST /auth/doctor/register`; account details remain in Redis with a three-day TTL until the email verification flow at `POST /auth/doctor/verify-email` succeeds.
 - Registration currently accepts account identity and password only; professional application fields and credential uploads remain to be defined and implemented.
-- Doctor password sign-in and single-use magic-link sign-in require a verified doctor record.
+- Shared password sign-in requires a verified, admin-approved doctor record. Single-use magic-link sign-in requires a verified doctor record.
 - Verified, pending-review doctors remain non-bookable.
 - `GET /admin/doctors/pending` lists verified applications awaiting review.
 - `PATCH /admin/doctors/:doctorId/approve` atomically transitions only a verified pending doctor to approved; only a signed-in super-admin may call it.
 - The super-admin account is created by the explicit `npm run seed:super-admin` command using `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_NAME`, and `SUPER_ADMIN_PASSWORD`. Seeding is idempotent and does not change existing credentials.
 - Doctor registration and email verification are implemented using the Redis pending-account cache and the Nest authentication package's hashed, single-use email verification tokens; see [auth.md](./auth.md).
+- Doctors may read/update their own basic profile and change their own password through the shared authenticated self-service routes in [auth.md](./auth.md).
 
 ## Verification States
 

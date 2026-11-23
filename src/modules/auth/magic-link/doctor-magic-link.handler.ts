@@ -25,8 +25,8 @@ export class DoctorMagicLinkHandler extends MagicLinkHandler {
   }
 
   async resolveUser(email: string): Promise<MagicLinkAccount | null> {
-    const user = await this.users.findByEmail(email);
+    const user = await this.users.findOne({ filter: { email } });
     if (!user || ![UserRole.DOCTOR, UserRole.SUPER_ADMIN].includes(user.role as UserRole) || !user.isVerified) return null;
-    return { id: String(user.id), email: user.email };
+    return { id: String(user._id), email: user.email };
   }
 }

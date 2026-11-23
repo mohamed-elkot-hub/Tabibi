@@ -39,6 +39,7 @@ Tabibi/
 - **`src/modules/`** contains NestJS modules that group controllers, services, and module wiring. Authentication, admin review, and user features are implemented; MongoDB infrastructure is in `mongodb.module.ts`.
 - **`src/modules/auth/`** is the parent authentication feature. Each auth method or flow (for example login, registration, or magic link) gets a separate subfolder with its own NestJS module; shared auth infrastructure lives at the parent level only when it is shared across methods.
 - **`src/common/`** contains code shared across feature modules: Mongoose models and repositories, guards, decorators, role definitions, types, interfaces, and constants.
+- `AbstractRepository` owns reusable Mongoose CRUD/query operations (`find`, `findOne`, `findById`, `create`, updates, deletes, and counts). Concrete repositories only bind a model; business-specific filters and transitions stay in services.
 - **`src/config/`** contains application configuration. Environment-specific values belong in local environment files; never put secret values in documentation or source control.
 - **`src/main.ts` and `src/app.module.ts`** bootstrap the application and compose its root modules.
 - **`test/`** currently contains the end-to-end test entry point. Unit tests use Vitest configuration at the repository root.
@@ -55,7 +56,7 @@ Tabibi/
 
 ## Current Feature Coverage
 
-The source contains shared user and doctor models, Mongo-backed sessions and authentication token stores, doctor registration and email verification, password and magic-link sign-in, super-admin seeding, doctor review endpoints, MongoDB wiring, and Redis-backed cache configuration. Patient registration, booking, doctor professional profile and credential submission, availability, and dashboards remain product planning.
+The source contains shared user and doctor models, Mongo-backed sessions and authentication token stores, doctor registration and email verification, shared role-aware password login, doctor magic-link sign-in, authenticated self-service profile/password routes, a unique super-admin invariant and seed command, doctor review endpoints, MongoDB wiring, and Redis-backed cache configuration. Patient registration, booking, doctor professional profile and credential submission, availability, and dashboards remain product planning.
 
 ## Common Commands
 

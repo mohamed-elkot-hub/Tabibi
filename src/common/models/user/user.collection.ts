@@ -13,5 +13,17 @@ export class UserCollection implements OnApplicationBootstrap {
     const users = await db.listCollections({ name: 'users' }).toArray();
     if (users.length === 0) await db.createCollection('users');
     await db.collection('users').createIndex({ email: 1 }, { unique: true, name: 'email_unique' });
+    const superAdminCount = await db.collection('users').countDocuments({ role: 'super_admin' });
+    if (superAdminCount > 1) {
+      throw new Error(`Cannot enforce the single super-admin invariant: found ${superAdminCount} super_admin records. Resolve duplicates in the users collection before restarting.`);
+    }
+    await db.collection('users').createIndex(
+      { role: 1 },
+      {
+        unique: true,
+        partialFilterExpression: { role: 'super_admin' },
+        name: 'one_super_admin_unique',
+      },
+    );
   }
 }

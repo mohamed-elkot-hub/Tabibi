@@ -16,15 +16,20 @@ describe('DoctorReviewPolicy', () => {
 describe('DoctorReviewService', () => {
   it('lists pending doctors and records approval', async () => {
     const pending = [{ id: 'doctor-1' }];
-    const users = { findPendingDoctors: vi.fn().mockResolvedValue(pending), approveDoctor: vi.fn().mockResolvedValue({ ...pending[0], reviewStatus: 'approved' }) };
+    const users = {
+      find: vi.fn().mockResolvedValue(pending),
+      findOneAndUpdate: vi.fn().mockResolvedValue({ ...pending[0], reviewStatus: 'approved' }),
+    };
     const service = new DoctorReviewService(users as never);
     await expect(service.pending()).resolves.toEqual(pending);
     await expect(service.approve('65f000000000000000000001', 'admin-1')).resolves.toMatchObject({ reviewStatus: 'approved' });
-    expect(users.approveDoctor).toHaveBeenCalledWith('65f000000000000000000001', 'admin-1');
+    expect(users.findOneAndUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      filter: expect.objectContaining({ _id: '65f000000000000000000001', role: 'doctor' }),
+    }));
   });
 
   it('rejects malformed and non-pending doctor IDs', async () => {
-    const service = new DoctorReviewService({ approveDoctor: vi.fn().mockResolvedValue(null) } as never);
+    const service = new DoctorReviewService({ findOneAndUpdate: vi.fn().mockResolvedValue(null) } as never);
     await expect(service.approve('bad-id', 'admin-1')).rejects.toBeInstanceOf(NotFoundException);
     await expect(service.approve('65f000000000000000000001', 'admin-1')).rejects.toBeInstanceOf(NotFoundException);
   });

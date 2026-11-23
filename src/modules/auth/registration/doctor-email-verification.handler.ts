@@ -40,7 +40,7 @@ export class DoctorEmailVerificationHandler extends EmailVerificationHandler {
     if (!pending || pending.id !== userId || pending.email !== email)
       return false;
 
-    const existing = await this.users.findByEmail(email);
+    const existing = await this.users.findOne({ filter: { email } });
     if (existing) {
       if (
         existing.role === UserRole.DOCTOR &&

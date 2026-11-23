@@ -18,6 +18,13 @@
 
 The initial operational dashboard may show counts of patients, doctors, pending applications, and appointments. Revenue reporting is excluded while payment scope is deferred.
 
+## Super-Admin Account
+
+- The system permits at most one `super_admin` account. MongoDB enforces this with a unique partial index on the shared `users` collection; startup reports an actionable error if legacy duplicate records prevent index creation.
+- Create the account explicitly with `npm run seed:super-admin`. The seed does not create another account if a super-admin already exists. If the configured email differs from the existing account, it fails without changing credentials. Concurrent seed runs are resolved by the database unique index.
+- The super-admin signs in through `POST /auth/login` and may read or update their own basic profile and change their own password through `GET/PATCH /auth/me` and `PATCH /auth/me/password`.
+- No user deletion endpoint is exposed. Preserve this invariant for any future delete path: a super-admin cannot delete itself or be deleted through the dashboard/API. Self-service does not permit role changes.
+
 ## Open Decisions
 
 - Define doctor review criteria and required evidence.

@@ -4,7 +4,7 @@ import { DoctorMagicLinkHandler } from './doctor-magic-link.handler';
 
 describe('DoctorMagicLinkHandler', () => {
   it('registers the handler and sends the configured mailable', async () => {
-    const users = { findByEmail: vi.fn() };
+    const users = { findOne: vi.fn() };
     const mailer = { send: vi.fn() };
     const registry = { registerHandler: vi.fn() };
     const handler = new DoctorMagicLinkHandler(users as never, mailer as never, registry as never);
@@ -23,7 +23,7 @@ describe('DoctorMagicLinkHandler', () => {
     [null, false],
   ])('resolves only verified doctor/admin accounts', async (account, allowed) => {
     const handler = new DoctorMagicLinkHandler(
-      { findByEmail: vi.fn().mockResolvedValue(account && { ...account, id: 'user-1', email: 'doctor@example.com' }) } as never,
+      { findOne: vi.fn().mockResolvedValue(account && { ...account, _id: 'user-1', email: 'doctor@example.com' }) } as never,
       { send: vi.fn() } as never,
       { registerHandler: vi.fn() } as never,
     );
