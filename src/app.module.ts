@@ -1,20 +1,18 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
-import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { UserModule, MongoDBModule } from './modules';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+import { AppConfigModule } from './config/app.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { DoctorReviewModule } from './modules/admin/doctor-review/doctor-review.module';
 
 @Module({
   imports: [
     { module: MongoDBModule, global: true },
-    ConfigModule.forRoot({
-      envFilePath: ['.env'],
-      isGlobal: true,
-    }),
+    AppConfigModule,
     UserModule,
+    AuthModule,
+    DoctorReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

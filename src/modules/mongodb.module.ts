@@ -1,18 +1,20 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { userModel, UserRepository } from '../common/models/user';
+import { userModel, UserCollection, UserRepository } from '../common/models/user';
+import { DoctorRepository } from '../common/models/doctor';
 import { Connection } from 'mongoose';
 import { UserModule } from './user/user.module';
-import configurtion from '../config/configurtion';
+import { sessionModel, SessionCollection, SessionRepository } from '../common/models/session';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configurtion] }),
     MongooseModule.forRootAsync({
       inject: [ConfigService], //  ConfigService
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('database.uri'),
+        uri: configService.get<string>('app.database.uri'),
+        autoCreate: false,
+        autoIndex: false,
 
         onConnectionCreate: (connection: Connection) => {
           connection.on('connected', () => console.log('connected'));
@@ -26,9 +28,10 @@ import configurtion from '../config/configurtion';
       }),
     }),
     MongooseModule.forFeatureAsync([userModel]),
+    MongooseModule.forFeature([sessionModel]),
     UserModule,
   ],
-  providers: [UserRepository],
-  exports: [UserRepository],
+  providers: [UserRepository, UserCollection, DoctorRepository, SessionCollection, SessionRepository],
+  exports: [UserRepository, UserCollection, DoctorRepository, SessionCollection, SessionRepository, MongooseModule],
 })
 export class MongoDBModule {}

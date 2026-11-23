@@ -1,0 +1,6 @@
+Verify your Tabibi doctor account
+
+Confirm your email address to finish creating your doctor account:
+{{ url }}
+
+This link expires at {{ expiresAt }}.

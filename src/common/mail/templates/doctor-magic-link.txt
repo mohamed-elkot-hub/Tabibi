@@ -1,0 +1,6 @@
+Your Tabibi sign-in link
+
+Use this single-use link to sign in to your account:
+{{ url }}
+
+This link expires at {{ expiresAt }}.

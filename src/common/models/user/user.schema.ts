@@ -32,7 +32,7 @@ export class User implements IUser {
     required: true,
     select: false,
   })
-  password: string;
+  passwordHash: string;
 
   @Prop({
     type: String,
@@ -42,6 +42,7 @@ export class User implements IUser {
   @Prop({
     type: String,
     enum: Object.values(UserRole),
+    required: true,
   })
   role: string;
 
