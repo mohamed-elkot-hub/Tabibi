@@ -32,7 +32,7 @@ export class User implements IUser {
     required: true,
     select: false,
   })
-  password: string;
+  passwordHash: string;
 
   @Prop({
     type: String,
@@ -42,6 +42,7 @@ export class User implements IUser {
   @Prop({
     type: String,
     enum: Object.values(UserRole),
+    required: true,
   })
   role: string;
 
@@ -53,3 +54,11 @@ export class User implements IUser {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+UserSchema.index(
+  { role: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { role: UserRole.SUPER_ADMIN },
+    name: 'one_super_admin_unique',
+  },
+);
